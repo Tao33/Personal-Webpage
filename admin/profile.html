@@ -74,7 +74,7 @@
 
   <script type="module">
     import { requireAuth, logout } from '../js/auth.js';
-    import { fetchData, showToast } from '../js/utils.js';
+    import { fetchData, saveData, showToast } from '../js/utils.js';
 
     if (!requireAuth()) return;
 
@@ -233,9 +233,11 @@
       }
 
       try {
+        saveData('data/profile.json', profileData);
         showToast('个人资料更新成功');
       } catch (error) {
         showToast('保存失败', 'error');
+        console.error(error);
       }
     });
 
