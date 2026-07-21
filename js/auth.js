@@ -1,4 +1,4 @@
-const ADMIN_PASSWORD_HASH = '482c811da5d5b4bc6d497ffa98491e384619d84e';
+const ADMIN_PASSWORD_HASH = 'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3';
 const LOGIN_EXPIRY_DAYS = 7;
 
 export function isLoggedIn() {
@@ -29,7 +29,7 @@ export function logout() {
 
 export function requireAuth() {
   if (!isLoggedIn()) {
-    window.location.href = '/admin/login.html';
+    window.location.href = 'admin/login.html';
     return false;
   }
   return true;
