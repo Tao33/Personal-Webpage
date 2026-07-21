@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>项目详情 - 张三</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <nav>
+        <a href="index.html" class="logo">张三</a>
+        <ul>
+          <li><a href="index.html">首页</a></li>
+          <li><a href="projects.html">项目作品</a></li>
+          <li><a href="docs.html">文档中心</a></li>
+          <li><a href="contact.html">联系我</a></li>
+        </ul>
+        <div class="actions">
+          <div class="toggle-switch" id="theme-toggle"></div>
+          <a href="admin/login.html" class="btn btn-secondary">管理后台</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <a href="projects.html" class="btn btn-secondary" style="margin-bottom: 1rem;">← 返回项目列表</a>
+    
+    <div id="project-detail" class="doc-detail-content"></div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2024 张三. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script type="module">
+    import { fetchData, formatDate, applySavedTheme, toggleTheme } from './js/utils.js';
+
+    async function loadProject() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const projectId = parseInt(urlParams.get('id'));
+
+      const projects = await fetchData('data/projects.json');
+      if (!projects) {
+        document.getElementById('project-detail').innerHTML = '<p>项目加载失败</p>';
+        return;
+      }
+
+      const project = projects.find(p => p.id === projectId);
+      if (!project || !project.isPublic) {
+        document.getElementById('project-detail').innerHTML = '<p>项目不存在或未公开</p>';
+        return;
+      }
+
+      document.title = `${project.name} - 张三`;
+
+      const detail = document.getElementById('project-detail');
+      detail.innerHTML = `
+        <div class="doc-detail-header">
+          <h1 class="doc-detail-title">${project.name}</h1>
+          <div class="doc-detail-meta">
+            <span>更新时间: ${formatDate(project.updatedAt)}</span>
+          </div>
+        </div>
+        
+        <img src="${project.cover}" alt="${project.name}" style="width: 100%; height: auto; border-radius: 0.5rem; margin-bottom: 2rem;">
+        
+        <h2>项目介绍</h2>
+        <p>${project.description}</p>
+        
+        <h2>技术栈</h2>
+        <div class="card-tags" style="margin-bottom: 2rem;">
+          ${project.techStack.map(tech => `<span class="tag tag-primary">${tech}</span>`).join('')}
+        </div>
+        
+        <h2>项目链接</h2>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+          ${project.githubUrl ? `<a href="${project.githubUrl}" target="_blank" class="btn btn-secondary"><i class="fab fa-github"></i> GitHub</a>` : ''}
+          ${project.demoUrl ? `<a href="${project.demoUrl}" target="_blank" class="btn btn-primary"><i class="fas fa-external-link-alt"></i> 在线演示</a>` : ''}
+        </div>
+      `;
+    }
+
+    applySavedTheme();
+    loadProject();
+
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+  </script>
+</body>
+</html>

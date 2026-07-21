@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>分类管理</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <nav>
+        <a href="dashboard.html" class="logo">管理后台</a>
+        <ul>
+          <li><a href="dashboard.html">仪表盘</a></li>
+          <li><a href="documents.html">文档管理</a></li>
+          <li><a href="projects.html">项目管理</a></li>
+          <li><a href="profile.html">个人资料</a></li>
+        </ul>
+        <div class="actions">
+          <button id="logout-btn" class="btn btn-secondary">退出登录</button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h1>分类管理</h1>
+      <button onclick="showAddForm()" class="btn btn-primary">新建分类</button>
+    </div>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>分类名称</th>
+          <th>文档数量</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="categories-table"></tbody>
+    </table>
+
+    <div id="add-form" style="display: none; margin-top: 1rem; padding: 1rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+      <h3>新建分类</h3>
+      <div class="form-group">
+        <label for="category-name">分类名称</label>
+        <input type="text" id="category-name" placeholder="请输入分类名称">
+      </div>
+      <button onclick="addCategory()" class="btn btn-primary">保存</button>
+      <button onclick="hideAddForm()" class="btn btn-secondary">取消</button>
+    </div>
+  </main>
+
+  <script type="module">
+    import { requireAuth, logout } from '../js/auth.js';
+    import { fetchData, showToast, confirmDialog } from '../js/utils.js';
+
+    if (!requireAuth()) return;
+
+    let categories = [];
+
+    async function loadCategories() {
+      const docs = await fetchData('../data/documents.json');
+      if (!docs) return;
+
+      const categoryCounts = {};
+      docs.forEach(doc => {
+        categoryCounts[doc.category] = (categoryCounts[doc.category] || 0) + 1;
+      });
+
+      categories = [...new Set(docs.map(d => d.category))];
+
+      const tbody = document.getElementById('categories-table');
+      tbody.innerHTML = categories.map(cat => `
+        <tr>
+          <td>${cat}</td>
+          <td>${categoryCounts[cat] || 0}</td>
+          <td>
+            <button onclick="editCategory('${cat}')" class="btn btn-sm btn-secondary"><i class="fas fa-edit"></i> 编辑</button>
+            <button onclick="deleteCategory('${cat}')" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i> 删除</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    window.showAddForm = function() {
+      document.getElementById('add-form').style.display = 'block';
+      document.getElementById('category-name').value = '';
+    };
+
+    window.hideAddForm = function() {
+      document.getElementById('add-form').style.display = 'none';
+    };
+
+    window.addCategory = function() {
+      const name = document.getElementById('category-name').value.trim();
+      if (!name) {
+        showToast('请输入分类名称', 'error');
+        return;
+      }
+
+      if (categories.includes(name)) {
+        showToast('分类已存在', 'error');
+        return;
+      }
+
+      categories.push(name);
+      showToast('分类创建成功');
+      hideAddForm();
+      loadCategories();
+    };
+
+    window.editCategory = function(oldName) {
+      const newName = prompt('请输入新的分类名称:', oldName);
+      if (!newName || newName === oldName) return;
+
+      if (categories.includes(newName)) {
+        showToast('分类已存在', 'error');
+        return;
+      }
+
+      const index = categories.indexOf(oldName);
+      categories[index] = newName;
+      showToast('分类更新成功');
+      loadCategories();
+    };
+
+    window.deleteCategory = async function(name) {
+      const confirmed = await confirmDialog('确定要删除这个分类吗？');
+      if (!confirmed) return;
+
+      const index = categories.indexOf(name);
+      if (index > -1) {
+        categories.splice(index, 1);
+        showToast('分类删除成功');
+        loadCategories();
+      }
+    };
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      logout();
+      window.location.href = 'login.html';
+    });
+
+    loadCategories();
+  </script>
+</body>
+</html>

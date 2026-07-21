@@ -1,0 +1,41 @@
+{
+  "name": "张三",
+  "title": "全栈开发者 · 技术博主",
+  "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop",
+  "bio": "热爱编程，专注于 Web 开发和技术分享。拥有多年全栈开发经验，擅长使用 JavaScript、Python、React 等技术栈构建高质量的应用程序。",
+  "skills": ["JavaScript", "TypeScript", "Python", "React", "Vue", "Node.js", "Docker", "PostgreSQL", "Git"],
+  "experience": [
+    {
+      "date": "2023-01-01",
+      "title": "高级前端工程师",
+      "company": "某知名互联网公司",
+      "description": "负责公司核心产品的前端架构设计和开发，推动团队技术升级和工程化实践。"
+    },
+    {
+      "date": "2021-03-01",
+      "title": "全栈开发工程师",
+      "company": "创业公司",
+      "description": "从零开始构建公司的技术体系，涵盖前后端开发、运维部署等多个领域。"
+    },
+    {
+      "date": "2019-06-01",
+      "title": "前端开发工程师",
+      "company": "外包公司",
+      "description": "参与多个大型企业项目的前端开发，积累了丰富的项目经验。"
+    }
+  ],
+  "education": [
+    {
+      "date": "2015-09-01",
+      "title": "软件工程专业",
+      "school": "某大学",
+      "description": "本科"
+    }
+  ],
+  "social": [
+    { "name": "GitHub", "url": "https://github.com/zhangsan", "icon": "github" },
+    { "name": "Twitter", "url": "https://twitter.com/zhangsan", "icon": "twitter" },
+    { "name": "LinkedIn", "url": "https://linkedin.com/in/zhangsan", "icon": "linkedin" },
+    { "name": "个人博客", "url": "https://blog.zhangsan.dev", "icon": "blog" }
+  ]
+}

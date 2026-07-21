@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>张三 - 全栈开发者 · 技术博主</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <nav>
+        <a href="index.html" class="logo">张三</a>
+        <ul>
+          <li><a href="index.html">首页</a></li>
+          <li><a href="projects.html">项目作品</a></li>
+          <li><a href="docs.html">文档中心</a></li>
+          <li><a href="contact.html">联系我</a></li>
+        </ul>
+        <div class="actions">
+          <div class="toggle-switch" id="theme-toggle"></div>
+          <a href="admin/login.html" class="btn btn-secondary">管理后台</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <img id="hero-avatar" src="" alt="个人头像" class="hero-avatar">
+      <h1 id="hero-name" class="hero-name"></h1>
+      <p id="hero-title" class="hero-title"></p>
+      <p id="hero-bio" class="hero-bio"></p>
+      
+      <div id="hero-skills" class="hero-skills"></div>
+
+      <div id="social-links" class="social-links"></div>
+    </section>
+
+    <section class="container">
+      <h2>工作经历</h2>
+      <div id="experience-timeline" class="timeline"></div>
+    </section>
+
+    <section class="container">
+      <h2>教育背景</h2>
+      <div id="education-timeline" class="timeline"></div>
+    </section>
+
+    <section class="container">
+      <h2>最近更新</h2>
+      <div class="grid grid-2">
+        <div>
+          <h3>最新文档</h3>
+          <div id="latest-docs"></div>
+        </div>
+        <div>
+          <h3>最新项目</h3>
+          <div id="latest-projects"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2024 张三. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script type="module">
+    import { fetchData, formatDate, formatRelativeTime, applySavedTheme, toggleTheme } from './js/utils.js';
+
+    async function loadProfile() {
+      const profile = await fetchData('data/profile.json');
+      if (!profile) return;
+
+      document.getElementById('hero-avatar').src = profile.avatar;
+      document.getElementById('hero-name').textContent = profile.name;
+      document.getElementById('hero-title').textContent = profile.title;
+      document.getElementById('hero-bio').textContent = profile.bio;
+
+      const skillsContainer = document.getElementById('hero-skills');
+      profile.skills.forEach(skill => {
+        const tag = document.createElement('span');
+        tag.className = 'tag tag-primary';
+        tag.textContent = skill;
+        skillsContainer.appendChild(tag);
+      });
+
+      const socialContainer = document.getElementById('social-links');
+      profile.social.forEach(social => {
+        const link = document.createElement('a');
+        link.href = social.url;
+        link.target = '_blank';
+        link.title = social.name;
+        link.innerHTML = `<i class="fab fa-${social.icon}"></i>`;
+        socialContainer.appendChild(link);
+      });
+
+      function renderTimeline(containerId, items) {
+        const container = document.getElementById(containerId);
+        items.sort((a, b) => new Date(b.date) - new Date(a.date));
+        items.forEach(item => {
+          const timelineItem = document.createElement('div');
+          timelineItem.className = 'timeline-item';
+          timelineItem.innerHTML = `
+            <div class="timeline-date">${formatDate(item.date)}</div>
+            <div class="timeline-title">${item.title}</div>
+            <div class="timeline-date">${item.company || item.school}</div>
+            <div class="timeline-description">${item.description}</div>
+          `;
+          container.appendChild(timelineItem);
+        });
+      }
+
+      renderTimeline('experience-timeline', profile.experience);
+      renderTimeline('education-timeline', profile.education);
+    }
+
+    async function loadLatestContent() {
+      const docs = await fetchData('data/documents.json');
+      const projects = await fetchData('data/projects.json');
+
+      const docsContainer = document.getElementById('latest-docs');
+      if (docs) {
+        const publicDocs = docs.filter(d => d.isPublic).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 5);
+        publicDocs.forEach(doc => {
+          const item = document.createElement('div');
+          item.className = 'doc-list-item';
+          item.innerHTML = `
+            <h3><a href="doc-detail.html?id=${doc.id}">${doc.title}</a></h3>
+            <div class="doc-meta">
+              <span>${doc.category}</span>
+              <span>${formatRelativeTime(doc.updatedAt)}</span>
+            </div>
+          `;
+          docsContainer.appendChild(item);
+        });
+      }
+
+      const projectsContainer = document.getElementById('latest-projects');
+      if (projects) {
+        const publicProjects = projects.filter(p => p.isPublic).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 5);
+        publicProjects.forEach(project => {
+          const item = document.createElement('div');
+          item.className = 'doc-list-item';
+          item.innerHTML = `
+            <h3><a href="project-detail.html?id=${project.id}">${project.name}</a></h3>
+            <div class="doc-meta">
+              <span>${project.techStack.join(', ')}</span>
+              <span>${formatRelativeTime(project.updatedAt)}</span>
+            </div>
+          `;
+          projectsContainer.appendChild(item);
+        });
+      }
+    }
+
+    applySavedTheme();
+    loadProfile();
+    loadLatestContent();
+
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+  </script>
+</body>
+</html>

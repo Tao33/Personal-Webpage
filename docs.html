@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文档中心 - 张三</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <nav>
+        <a href="index.html" class="logo">张三</a>
+        <ul>
+          <li><a href="index.html">首页</a></li>
+          <li><a href="projects.html">项目作品</a></li>
+          <li><a href="docs.html">文档中心</a></li>
+          <li><a href="contact.html">联系我</a></li>
+        </ul>
+        <div class="actions">
+          <div class="toggle-switch" id="theme-toggle"></div>
+          <a href="admin/login.html" class="btn btn-secondary">管理后台</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <h1>文档中心</h1>
+    <p class="text-secondary">记录我的技术笔记、项目文档和学习心得</p>
+
+    <div class="search-bar">
+      <input type="text" id="search-input" placeholder="搜索文档标题...">
+    </div>
+
+    <div class="filters">
+      <div class="filter-group">
+        <label for="category-filter">分类:</label>
+        <select id="category-filter">
+          <option value="">全部</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="tag-filter">标签:</label>
+        <select id="tag-filter">
+          <option value="">全部</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="docs-list"></div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2024 张三. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script type="module">
+    import { fetchData, formatDate, formatRelativeTime, applySavedTheme, toggleTheme, debounce } from './js/utils.js';
+
+    let documents = [];
+    let allCategories = [];
+    let allTags = [];
+
+    async function loadDocuments() {
+      documents = await fetchData('data/documents.json');
+      if (!documents) return;
+
+      allCategories = [...new Set(documents.map(d => d.category))];
+      allTags = [...new Set(documents.flatMap(d => d.tags))];
+      
+      populateFilters();
+      renderDocuments(documents.filter(d => d.isPublic));
+    }
+
+    function populateFilters() {
+      const categorySelect = document.getElementById('category-filter');
+      allCategories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        categorySelect.appendChild(option);
+      });
+
+      const tagSelect = document.getElementById('tag-filter');
+      allTags.forEach(tag => {
+        const option = document.createElement('option');
+        option.value = tag;
+        option.textContent = tag;
+        tagSelect.appendChild(option);
+      });
+    }
+
+    function renderDocuments(filteredDocs) {
+      const list = document.getElementById('docs-list');
+      list.innerHTML = '';
+
+      if (filteredDocs.length === 0) {
+        list.innerHTML = '<p style="text-align: center;">暂无文档</p>';
+        return;
+      }
+
+      filteredDocs.forEach(doc => {
+        const item = document.createElement('div');
+        item.className = 'doc-list-item';
+        item.innerHTML = `
+          <h3><a href="doc-detail.html?id=${doc.id}">${doc.title}</a></h3>
+          <div class="doc-meta">
+            <span><i class="fas fa-folder"></i> ${doc.category}</span>
+            <span><i class="fas fa-calendar"></i> ${formatDate(doc.createdAt)}</span>
+            <span><i class="fas fa-clock"></i> ${formatRelativeTime(doc.updatedAt)}</span>
+          </div>
+          <div class="card-tags" style="margin: 0.5rem 0;">
+            ${doc.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+          </div>
+          <p class="doc-excerpt">${doc.excerpt}</p>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    function filterDocuments() {
+      const searchQuery = document.getElementById('search-input').value.toLowerCase();
+      const categoryFilter = document.getElementById('category-filter').value;
+      const tagFilter = document.getElementById('tag-filter').value;
+
+      let filtered = documents.filter(d => d.isPublic);
+
+      if (searchQuery) {
+        filtered = filtered.filter(d => d.title.toLowerCase().includes(searchQuery));
+      }
+
+      if (categoryFilter) {
+        filtered = filtered.filter(d => d.category === categoryFilter);
+      }
+
+      if (tagFilter) {
+        filtered = filtered.filter(d => d.tags.includes(tagFilter));
+      }
+
+      filtered.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+      renderDocuments(filtered);
+    }
+
+    applySavedTheme();
+    loadDocuments();
+
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    document.getElementById('search-input').addEventListener('input', debounce(filterDocuments, 300));
+    document.getElementById('category-filter').addEventListener('change', filterDocuments);
+    document.getElementById('tag-filter').addEventListener('change', filterDocuments);
+  </script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文档详情 - 张三</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css">
+</head>
+<body>
+  <div class="reading-progress" id="reading-progress"></div>
+  
+  <header>
+    <div class="container">
+      <nav>
+        <a href="index.html" class="logo">张三</a>
+        <ul>
+          <li><a href="index.html">首页</a></li>
+          <li><a href="projects.html">项目作品</a></li>
+          <li><a href="docs.html">文档中心</a></li>
+          <li><a href="contact.html">联系我</a></li>
+        </ul>
+        <div class="actions">
+          <div class="font-size-controls">
+            <button id="font-sm">A-</button>
+            <button id="font-md" class="active">A</button>
+            <button id="font-lg">A+</button>
+          </div>
+          <div class="toggle-switch" id="theme-toggle"></div>
+          <a href="admin/login.html" class="btn btn-secondary">管理后台</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container" style="display: grid; grid-template-columns: 250px 1fr; gap: 2rem;">
+    <aside class="sidebar">
+      <div class="sidebar-title">文档目录</div>
+      <ul id="toc" class="sidebar-nav"></ul>
+    </aside>
+
+    <div>
+      <a href="docs.html" class="btn btn-secondary" style="margin-bottom: 1rem;">← 返回文档列表</a>
+      
+      <div id="doc-detail" class="doc-detail-content"></div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2024 张三. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.2/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+  <script type="module">
+    import { fetchData, formatDate, applySavedTheme, toggleTheme, updateReadingProgress, parseMarkdownHeaders, setFontSize, applySavedFontSize } from './js/utils.js';
+
+    async function loadDocument() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const docId = parseInt(urlParams.get('id'));
+
+      const documents = await fetchData('data/documents.json');
+      if (!documents) {
+        document.getElementById('doc-detail').innerHTML = '<p>文档加载失败</p>';
+        return;
+      }
+
+      const doc = documents.find(d => d.id === docId);
+      if (!doc || !doc.isPublic) {
+        document.getElementById('doc-detail').innerHTML = '<p>文档不存在或未公开</p>';
+        return;
+      }
+
+      document.title = `${doc.title} - 张三`;
+
+      const detail = document.getElementById('doc-detail');
+      detail.innerHTML = `
+        <div class="doc-detail-header">
+          <h1 class="doc-detail-title">${doc.title}</h1>
+          <div class="doc-detail-meta">
+            <span><i class="fas fa-folder"></i> ${doc.category}</span>
+            <span><i class="fas fa-calendar"></i> ${formatDate(doc.createdAt)}</span>
+            <span><i class="fas fa-clock"></i> 更新于 ${formatDate(doc.updatedAt)}</span>
+          </div>
+          <div class="card-tags">
+            ${doc.tags.map(tag => `<span class="tag tag-primary">${tag}</span>`).join('')}
+          </div>
+        </div>
+        <div id="doc-content"></div>
+      `;
+
+      const content = document.getElementById('doc-content');
+      content.innerHTML = marked.parse(doc.content);
+
+      document.querySelectorAll('pre code').forEach(block => {
+        hljs.highlightElement(block);
+      });
+
+      generateTOC(doc.content);
+    }
+
+    function generateTOC(markdown) {
+      const headers = parseMarkdownHeaders(markdown);
+      const toc = document.getElementById('toc');
+      toc.innerHTML = '';
+
+      headers.forEach(header => {
+        const li = document.createElement('li');
+        li.style.paddingLeft = `${(header.level - 1) * 10}px`;
+        li.innerHTML = `<a href="#${header.id}">${header.title}</a>`;
+        toc.appendChild(li);
+      });
+
+      document.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(heading => {
+        const id = heading.textContent.trim().toLowerCase().replace(/[\s\W-]+/g, '-');
+        heading.id = id;
+      });
+    }
+
+    applySavedTheme();
+    applySavedFontSize();
+    loadDocument();
+
+    window.addEventListener('scroll', updateReadingProgress);
+
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    
+    document.getElementById('font-sm').addEventListener('click', () => {
+      setFontSize(14);
+      document.querySelectorAll('.font-size-controls button').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('font-sm').classList.add('active');
+    });
+    
+    document.getElementById('font-md').addEventListener('click', () => {
+      setFontSize(16);
+      document.querySelectorAll('.font-size-controls button').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('font-md').classList.add('active');
+    });
+    
+    document.getElementById('font-lg').addEventListener('click', () => {
+      setFontSize(18);
+      document.querySelectorAll('.font-size-controls button').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('font-lg').classList.add('active');
+    });
+  </script>
+</body>
+</html>

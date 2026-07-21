@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>编辑项目</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <nav>
+        <a href="dashboard.html" class="logo">管理后台</a>
+        <ul>
+          <li><a href="dashboard.html">仪表盘</a></li>
+          <li><a href="documents.html">文档管理</a></li>
+          <li><a href="projects.html">项目管理</a></li>
+          <li><a href="profile.html">个人资料</a></li>
+        </ul>
+        <div class="actions">
+          <button id="logout-btn" class="btn btn-secondary">退出登录</button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <a href="projects.html" class="btn btn-secondary" style="margin-bottom: 1rem;">← 返回项目列表</a>
+    
+    <h1 id="page-title">新建项目</h1>
+
+    <form id="project-form">
+      <input type="hidden" id="project-id">
+      
+      <div class="form-group">
+        <label for="name">项目名称</label>
+        <input type="text" id="name" name="name" required placeholder="请输入项目名称">
+      </div>
+
+      <div class="form-group">
+        <label for="cover">项目封面图 URL</label>
+        <input type="url" id="cover" name="cover" placeholder="上传图片到图床后获取链接">
+      </div>
+
+      <div class="form-group">
+        <label for="description">项目描述</label>
+        <textarea id="description" name="description" placeholder="简要描述项目功能"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="techStack">技术栈（逗号分隔）</label>
+        <input type="text" id="techStack" name="techStack" placeholder="如：React, Node.js, MongoDB">
+      </div>
+
+      <div class="form-group">
+        <label for="githubUrl">GitHub 地址</label>
+        <input type="url" id="githubUrl" name="githubUrl" placeholder="https://github.com/...">
+      </div>
+
+      <div class="form-group">
+        <label for="demoUrl">在线演示地址（可选）</label>
+        <input type="url" id="demoUrl" name="demoUrl" placeholder="https://demo.example.com">
+      </div>
+
+      <div class="form-group checkbox-wrapper">
+        <input type="checkbox" id="isPublic" name="isPublic" checked>
+        <label for="isPublic">公开项目</label>
+      </div>
+
+      <div style="display: flex; gap: 1rem;">
+        <button type="submit" class="btn btn-primary">保存项目</button>
+      </div>
+    </form>
+  </main>
+
+  <script type="module">
+    import { requireAuth, logout } from '../js/auth.js';
+    import { fetchData, showToast } from '../js/utils.js';
+
+    if (!requireAuth()) return;
+
+    let isEditMode = false;
+
+    async function loadProject() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const projectId = urlParams.get('id');
+
+      if (projectId) {
+        isEditMode = true;
+        document.getElementById('page-title').textContent = '编辑项目';
+
+        const projects = await fetchData('../data/projects.json');
+        if (!projects) return;
+
+        const project = projects.find(p => p.id === parseInt(projectId));
+        if (!project) return;
+
+        document.getElementById('project-id').value = project.id;
+        document.getElementById('name').value = project.name;
+        document.getElementById('cover').value = project.cover;
+        document.getElementById('description').value = project.description;
+        document.getElementById('techStack').value = project.techStack.join(', ');
+        document.getElementById('githubUrl').value = project.githubUrl || '';
+        document.getElementById('demoUrl').value = project.demoUrl || '';
+        document.getElementById('isPublic').checked = project.isPublic;
+      }
+    }
+
+    document.getElementById('project-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById('name').value;
+      const cover = document.getElementById('cover').value;
+      const description = document.getElementById('description').value;
+      const techStack = document.getElementById('techStack').value.split(',').map(t => t.trim()).filter(t => t);
+      const githubUrl = document.getElementById('githubUrl').value;
+      const demoUrl = document.getElementById('demoUrl').value;
+      const isPublic = document.getElementById('isPublic').checked;
+      const projectId = document.getElementById('project-id').value;
+
+      const now = new Date().toISOString().split('T')[0];
+
+      const projectData = {
+        id: isEditMode ? parseInt(projectId) : Date.now(),
+        name,
+        cover: cover || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=250&fit=crop',
+        description,
+        techStack,
+        githubUrl: githubUrl || null,
+        demoUrl: demoUrl || null,
+        isPublic,
+        createdAt: isEditMode ? now : now,
+        updatedAt: now
+      };
+
+      try {
+        showToast(isEditMode ? '项目更新成功' : '项目创建成功');
+        setTimeout(() => {
+          window.location.href = 'projects.html';
+        }, 1000);
+      } catch (error) {
+        showToast('保存失败', 'error');
+      }
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      logout();
+      window.location.href = 'login.html';
+    });
+
+    loadProject();
+  </script>
+</body>
+</html>

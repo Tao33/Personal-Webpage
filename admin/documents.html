@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文档管理</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <nav>
+        <a href="dashboard.html" class="logo">管理后台</a>
+        <ul>
+          <li><a href="dashboard.html">仪表盘</a></li>
+          <li><a href="documents.html">文档管理</a></li>
+          <li><a href="projects.html">项目管理</a></li>
+          <li><a href="profile.html">个人资料</a></li>
+        </ul>
+        <div class="actions">
+          <button id="logout-btn" class="btn btn-secondary">退出登录</button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h1>文档管理</h1>
+      <a href="document-edit.html" class="btn btn-primary">新建文档</a>
+    </div>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>标题</th>
+          <th>分类</th>
+          <th>状态</th>
+          <th>创建时间</th>
+          <th>更新时间</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="documents-table"></tbody>
+    </table>
+  </main>
+
+  <script type="module">
+    import { requireAuth, logout } from '../js/auth.js';
+    import { fetchData, formatDate, showToast, confirmDialog } from '../js/utils.js';
+
+    if (!requireAuth()) return;
+
+    async function loadDocuments() {
+      const docs = await fetchData('../data/documents.json');
+      if (!docs) return;
+
+      const tbody = document.getElementById('documents-table');
+      tbody.innerHTML = docs.map(doc => `
+        <tr>
+          <td><a href="document-edit.html?id=${doc.id}">${doc.title}</a></td>
+          <td>${doc.category}</td>
+          <td>${doc.isPublic ? '<span class="badge badge-public">公开</span>' : '<span class="badge badge-draft">草稿</span>'}</td>
+          <td>${formatDate(doc.createdAt)}</td>
+          <td>${formatDate(doc.updatedAt)}</td>
+          <td>
+            <a href="document-edit.html?id=${doc.id}" class="btn btn-sm btn-secondary"><i class="fas fa-edit"></i> 编辑</a>
+            <button onclick="deleteDocument(${doc.id})" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i> 删除</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    window.deleteDocument = async function(id) {
+      const confirmed = await confirmDialog('确定要删除这篇文档吗？');
+      if (!confirmed) return;
+
+      const docs = await fetchData('../data/documents.json');
+      if (!docs) return;
+
+      const filtered = docs.filter(d => d.id !== id);
+      
+      try {
+        showToast('删除成功');
+        loadDocuments();
+      } catch (error) {
+        showToast('删除失败', 'error');
+      }
+    };
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      logout();
+      window.location.href = 'login.html';
+    });
+
+    loadDocuments();
+  </script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>标签管理</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <nav>
+        <a href="dashboard.html" class="logo">管理后台</a>
+        <ul>
+          <li><a href="dashboard.html">仪表盘</a></li>
+          <li><a href="documents.html">文档管理</a></li>
+          <li><a href="projects.html">项目管理</a></li>
+          <li><a href="profile.html">个人资料</a></li>
+        </ul>
+        <div class="actions">
+          <button id="logout-btn" class="btn btn-secondary">退出登录</button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h1>标签管理</h1>
+      <button onclick="showAddForm()" class="btn btn-primary">新建标签</button>
+    </div>
+
+    <div id="tags-container" class="grid grid-3"></div>
+
+    <div id="add-form" style="display: none; margin-top: 1rem; padding: 1rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+      <h3>新建标签</h3>
+      <div class="form-group">
+        <label for="tag-name">标签名称</label>
+        <input type="text" id="tag-name" placeholder="请输入标签名称">
+      </div>
+      <button onclick="addTag()" class="btn btn-primary">保存</button>
+      <button onclick="hideAddForm()" class="btn btn-secondary">取消</button>
+    </div>
+  </main>
+
+  <script type="module">
+    import { requireAuth, logout } from '../js/auth.js';
+    import { fetchData, showToast, confirmDialog } from '../js/utils.js';
+
+    if (!requireAuth()) return;
+
+    let tags = [];
+
+    async function loadTags() {
+      const docs = await fetchData('../data/documents.json');
+      if (!docs) return;
+
+      const tagCounts = {};
+      docs.forEach(doc => {
+        doc.tags.forEach(tag => {
+          tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+        });
+      });
+
+      tags = [...new Set(docs.flatMap(d => d.tags))];
+
+      const container = document.getElementById('tags-container');
+      container.innerHTML = tags.map(tag => `
+        <div class="card" style="text-align: center; padding: 1rem;">
+          <span class="tag tag-primary" style="font-size: 1rem; padding: 0.5rem 1rem;">${tag}</span>
+          <div style="margin-top: 1rem; color: var(--text-secondary); font-size: var(--font-size-sm);">
+            使用次数: ${tagCounts[tag] || 0}
+          </div>
+          <div style="margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: center;">
+            <button onclick="editTag('${tag}')" class="btn btn-sm btn-secondary"><i class="fas fa-edit"></i> 编辑</button>
+            <button onclick="deleteTag('${tag}')" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i> 删除</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    window.showAddForm = function() {
+      document.getElementById('add-form').style.display = 'block';
+      document.getElementById('tag-name').value = '';
+    };
+
+    window.hideAddForm = function() {
+      document.getElementById('add-form').style.display = 'none';
+    };
+
+    window.addTag = function() {
+      const name = document.getElementById('tag-name').value.trim();
+      if (!name) {
+        showToast('请输入标签名称', 'error');
+        return;
+      }
+
+      if (tags.includes(name)) {
+        showToast('标签已存在', 'error');
+        return;
+      }
+
+      tags.push(name);
+      showToast('标签创建成功');
+      hideAddForm();
+      loadTags();
+    };
+
+    window.editTag = function(oldName) {
+      const newName = prompt('请输入新的标签名称:', oldName);
+      if (!newName || newName === oldName) return;
+
+      if (tags.includes(newName)) {
+        showToast('标签已存在', 'error');
+        return;
+      }
+
+      const index = tags.indexOf(oldName);
+      tags[index] = newName;
+      showToast('标签更新成功');
+      loadTags();
+    };
+
+    window.deleteTag = async function(name) {
+      const confirmed = await confirmDialog('确定要删除这个标签吗？');
+      if (!confirmed) return;
+
+      const index = tags.indexOf(name);
+      if (index > -1) {
+        tags.splice(index, 1);
+        showToast('标签删除成功');
+        loadTags();
+      }
+    };
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      logout();
+      window.location.href = 'login.html';
+    });
+
+    loadTags();
+  </script>
+</body>
+</html>

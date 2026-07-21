@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>个人资料</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <nav>
+        <a href="dashboard.html" class="logo">管理后台</a>
+        <ul>
+          <li><a href="dashboard.html">仪表盘</a></li>
+          <li><a href="documents.html">文档管理</a></li>
+          <li><a href="projects.html">项目管理</a></li>
+          <li><a href="profile.html">个人资料</a></li>
+        </ul>
+        <div class="actions">
+          <button id="logout-btn" class="btn btn-secondary">退出登录</button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <a href="dashboard.html" class="btn btn-secondary" style="margin-bottom: 1rem;">← 返回仪表盘</a>
+    
+    <h1>编辑个人资料</h1>
+
+    <form id="profile-form">
+      <div class="form-group">
+        <label for="name">姓名</label>
+        <input type="text" id="name" name="name" required>
+      </div>
+
+      <div class="form-group">
+        <label for="title">个人定位标语</label>
+        <input type="text" id="title" name="title" placeholder="如：全栈开发者 · 技术博主">
+      </div>
+
+      <div class="form-group">
+        <label for="avatar">头像图片 URL</label>
+        <input type="url" id="avatar" name="avatar" placeholder="上传图片到图床后获取链接">
+      </div>
+
+      <div class="form-group">
+        <label for="bio">个人简介</label>
+        <textarea id="bio" name="bio" rows="4"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="skills">技能标签（逗号分隔）</label>
+        <input type="text" id="skills" name="skills" placeholder="如：JavaScript, Python, React">
+      </div>
+
+      <h2>工作经历</h2>
+      <div id="experience-list"></div>
+      <button type="button" onclick="addExperience()" class="btn btn-secondary" style="margin-bottom: 1rem;">添加工作经历</button>
+
+      <h2>教育背景</h2>
+      <div id="education-list"></div>
+      <button type="button" onclick="addEducation()" class="btn btn-secondary" style="margin-bottom: 1rem;">添加教育背景</button>
+
+      <h2>社交媒体链接</h2>
+      <div id="social-list"></div>
+      <button type="button" onclick="addSocial()" class="btn btn-secondary" style="margin-bottom: 1rem;">添加社交链接</button>
+
+      <button type="submit" class="btn btn-primary">保存资料</button>
+    </form>
+  </main>
+
+  <script type="module">
+    import { requireAuth, logout } from '../js/auth.js';
+    import { fetchData, showToast } from '../js/utils.js';
+
+    if (!requireAuth()) return;
+
+    async function loadProfile() {
+      const profile = await fetchData('../data/profile.json');
+      if (!profile) return;
+
+      document.getElementById('name').value = profile.name;
+      document.getElementById('title').value = profile.title;
+      document.getElementById('avatar').value = profile.avatar;
+      document.getElementById('bio').value = profile.bio;
+      document.getElementById('skills').value = profile.skills.join(', ');
+
+      renderExperience(profile.experience);
+      renderEducation(profile.education);
+      renderSocial(profile.social);
+    }
+
+    function renderExperience(items) {
+      const container = document.getElementById('experience-list');
+      container.innerHTML = items.map((item, index) => `
+        <div class="form-group" style="border: 1px solid var(--border-color); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+          <button type="button" onclick="removeExperience(${index})" class="btn btn-sm btn-danger" style="float: right;">删除</button>
+          <input type="hidden" name="experience[${index}][date]" value="${item.date}">
+          <input type="text" name="experience[${index}][title]" placeholder="职位" value="${item.title}" style="width: 100%; margin-bottom: 0.5rem;">
+          <input type="text" name="experience[${index}][company]" placeholder="公司" value="${item.company}" style="width: 100%; margin-bottom: 0.5rem;">
+          <textarea name="experience[${index}][description]" placeholder="描述" rows="2" style="width: 100%;">${item.description}</textarea>
+        </div>
+      `).join('');
+    }
+
+    function renderEducation(items) {
+      const container = document.getElementById('education-list');
+      container.innerHTML = items.map((item, index) => `
+        <div class="form-group" style="border: 1px solid var(--border-color); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+          <button type="button" onclick="removeEducation(${index})" class="btn btn-sm btn-danger" style="float: right;">删除</button>
+          <input type="hidden" name="education[${index}][date]" value="${item.date}">
+          <input type="text" name="education[${index}][title]" placeholder="专业/学历" value="${item.title}" style="width: 100%; margin-bottom: 0.5rem;">
+          <input type="text" name="education[${index}][school]" placeholder="学校" value="${item.school}" style="width: 100%; margin-bottom: 0.5rem;">
+          <textarea name="education[${index}][description]" placeholder="描述" rows="2" style="width: 100%;">${item.description}</textarea>
+        </div>
+      `).join('');
+    }
+
+    function renderSocial(items) {
+      const container = document.getElementById('social-list');
+      container.innerHTML = items.map((item, index) => `
+        <div class="form-group" style="border: 1px solid var(--border-color); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+          <button type="button" onclick="removeSocial(${index})" class="btn btn-sm btn-danger" style="float: right;">删除</button>
+          <input type="text" name="social[${index}][name]" placeholder="名称" value="${item.name}" style="width: 100%; margin-bottom: 0.5rem;">
+          <input type="url" name="social[${index}][url]" placeholder="链接" value="${item.url}" style="width: 100%; margin-bottom: 0.5rem;">
+          <input type="text" name="social[${index}][icon]" placeholder="图标名称（如：github）" value="${item.icon}" style="width: 100%;">
+        </div>
+      `).join('');
+    }
+
+    window.addExperience = function() {
+      const container = document.getElementById('experience-list');
+      const index = container.children.length;
+      const now = new Date().toISOString().split('T')[0];
+      container.innerHTML += `
+        <div class="form-group" style="border: 1px solid var(--border-color); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+          <button type="button" onclick="removeExperience(${index})" class="btn btn-sm btn-danger" style="float: right;">删除</button>
+          <input type="hidden" name="experience[${index}][date]" value="${now}">
+          <input type="text" name="experience[${index}][title]" placeholder="职位" style="width: 100%; margin-bottom: 0.5rem;">
+          <input type="text" name="experience[${index}][company]" placeholder="公司" style="width: 100%; margin-bottom: 0.5rem;">
+          <textarea name="experience[${index}][description]" placeholder="描述" rows="2" style="width: 100%;"></textarea>
+        </div>
+      `;
+    };
+
+    window.removeExperience = function(index) {
+      const container = document.getElementById('experience-list');
+      container.children[index].remove();
+    };
+
+    window.addEducation = function() {
+      const container = document.getElementById('education-list');
+      const index = container.children.length;
+      const now = new Date().toISOString().split('T')[0];
+      container.innerHTML += `
+        <div class="form-group" style="border: 1px solid var(--border-color); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+          <button type="button" onclick="removeEducation(${index})" class="btn btn-sm btn-danger" style="float: right;">删除</button>
+          <input type="hidden" name="education[${index}][date]" value="${now}">
+          <input type="text" name="education[${index}][title]" placeholder="专业/学历" style="width: 100%; margin-bottom: 0.5rem;">
+          <input type="text" name="education[${index}][school]" placeholder="学校" style="width: 100%; margin-bottom: 0.5rem;">
+          <textarea name="education[${index}][description]" placeholder="描述" rows="2" style="width: 100%;"></textarea>
+        </div>
+      `;
+    };
+
+    window.removeEducation = function(index) {
+      const container = document.getElementById('education-list');
+      container.children[index].remove();
+    };
+
+    window.addSocial = function() {
+      const container = document.getElementById('social-list');
+      const index = container.children.length;
+      container.innerHTML += `
+        <div class="form-group" style="border: 1px solid var(--border-color); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+          <button type="button" onclick="removeSocial(${index})" class="btn btn-sm btn-danger" style="float: right;">删除</button>
+          <input type="text" name="social[${index}][name]" placeholder="名称" style="width: 100%; margin-bottom: 0.5rem;">
+          <input type="url" name="social[${index}][url]" placeholder="链接" style="width: 100%; margin-bottom: 0.5rem;">
+          <input type="text" name="social[${index}][icon]" placeholder="图标名称（如：github）" style="width: 100%;">
+        </div>
+      `;
+    };
+
+    window.removeSocial = function(index) {
+      const container = document.getElementById('social-list');
+      container.children[index].remove();
+    };
+
+    document.getElementById('profile-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData);
+
+      const profileData = {
+        name: data.name,
+        title: data.title,
+        avatar: data.avatar,
+        bio: data.bio,
+        skills: data.skills.split(',').map(s => s.trim()).filter(s => s),
+        experience: [],
+        education: [],
+        social: []
+      };
+
+      for (const [key, value] of formData) {
+        const match = key.match(/experience\[(\d+)\]\[(\w+)\]/);
+        if (match) {
+          const index = parseInt(match[1]);
+          const field = match[2];
+          if (!profileData.experience[index]) profileData.experience[index] = {};
+          profileData.experience[index][field] = value;
+        }
+
+        const eduMatch = key.match(/education\[(\d+)\]\[(\w+)\]/);
+        if (eduMatch) {
+          const index = parseInt(eduMatch[1]);
+          const field = eduMatch[2];
+          if (!profileData.education[index]) profileData.education[index] = {};
+          profileData.education[index][field] = value;
+        }
+
+        const socialMatch = key.match(/social\[(\d+)\]\[(\w+)\]/);
+        if (socialMatch) {
+          const index = parseInt(socialMatch[1]);
+          const field = socialMatch[2];
+          if (!profileData.social[index]) profileData.social[index] = {};
+          profileData.social[index][field] = value;
+        }
+      }
+
+      try {
+        showToast('个人资料更新成功');
+      } catch (error) {
+        showToast('保存失败', 'error');
+      }
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      logout();
+      window.location.href = 'login.html';
+    });
+
+    loadProfile();
+  </script>
+</body>
+</html>

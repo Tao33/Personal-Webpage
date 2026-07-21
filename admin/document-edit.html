@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>编辑文档</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <nav>
+        <a href="dashboard.html" class="logo">管理后台</a>
+        <ul>
+          <li><a href="dashboard.html">仪表盘</a></li>
+          <li><a href="documents.html">文档管理</a></li>
+          <li><a href="projects.html">项目管理</a></li>
+          <li><a href="profile.html">个人资料</a></li>
+        </ul>
+        <div class="actions">
+          <button id="logout-btn" class="btn btn-secondary">退出登录</button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <a href="documents.html" class="btn btn-secondary" style="margin-bottom: 1rem;">← 返回文档列表</a>
+    
+    <h1 id="page-title">新建文档</h1>
+
+    <form id="document-form">
+      <input type="hidden" id="document-id">
+      
+      <div class="form-group">
+        <label for="title">文档标题</label>
+        <input type="text" id="title" name="title" required placeholder="请输入文档标题">
+      </div>
+
+      <div class="form-group">
+        <label for="category">分类</label>
+        <select id="category" name="category">
+          <option value="技术笔记">技术笔记</option>
+          <option value="项目文档">项目文档</option>
+          <option value="随笔思考">随笔思考</option>
+          <option value="学习笔记">学习笔记</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="tags">标签（逗号分隔）</label>
+        <input type="text" id="tags" name="tags" placeholder="如：JavaScript, React, 前端">
+      </div>
+
+      <div class="form-group">
+        <label for="excerpt">摘要</label>
+        <textarea id="excerpt" name="excerpt" placeholder="简短描述文档内容"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="content">文档正文（Markdown）</label>
+        <div class="editor-container">
+          <textarea id="content" name="content" placeholder="使用 Markdown 格式编写文档内容..."></textarea>
+          <div id="preview" class="preview-panel"></div>
+        </div>
+      </div>
+
+      <div class="form-group checkbox-wrapper">
+        <input type="checkbox" id="isPublic" name="isPublic" checked>
+        <label for="isPublic">公开文档</label>
+      </div>
+
+      <div style="display: flex; gap: 1rem;">
+        <button type="submit" class="btn btn-primary">保存文档</button>
+        <button type="button" onclick="previewMarkdown()" class="btn btn-secondary">预览</button>
+      </div>
+    </form>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.2/marked.min.js"></script>
+  <script type="module">
+    import { requireAuth, logout } from '../js/auth.js';
+    import { fetchData, showToast, generateSlug } from '../js/utils.js';
+
+    if (!requireAuth()) return;
+
+    let isEditMode = false;
+
+    async function loadDocument() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const docId = urlParams.get('id');
+
+      if (docId) {
+        isEditMode = true;
+        document.getElementById('page-title').textContent = '编辑文档';
+
+        const docs = await fetchData('../data/documents.json');
+        if (!docs) return;
+
+        const doc = docs.find(d => d.id === parseInt(docId));
+        if (!doc) return;
+
+        document.getElementById('document-id').value = doc.id;
+        document.getElementById('title').value = doc.title;
+        document.getElementById('category').value = doc.category;
+        document.getElementById('tags').value = doc.tags.join(', ');
+        document.getElementById('excerpt').value = doc.excerpt;
+        document.getElementById('content').value = doc.content;
+        document.getElementById('isPublic').checked = doc.isPublic;
+
+        previewMarkdown();
+      }
+    }
+
+    function previewMarkdown() {
+      const content = document.getElementById('content').value;
+      const preview = document.getElementById('preview');
+      preview.innerHTML = marked.parse(content);
+    }
+
+    document.getElementById('content').addEventListener('input', previewMarkdown);
+
+    document.getElementById('document-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const title = document.getElementById('title').value;
+      const category = document.getElementById('category').value;
+      const tags = document.getElementById('tags').value.split(',').map(t => t.trim()).filter(t => t);
+      const excerpt = document.getElementById('excerpt').value;
+      const content = document.getElementById('content').value;
+      const isPublic = document.getElementById('isPublic').checked;
+      const docId = document.getElementById('document-id').value;
+
+      const now = new Date().toISOString().split('T')[0];
+
+      const documentData = {
+        id: isEditMode ? parseInt(docId) : Date.now(),
+        slug: generateSlug(title),
+        title,
+        category,
+        tags,
+        excerpt,
+        content,
+        isPublic,
+        createdAt: isEditMode ? now : now,
+        updatedAt: now
+      };
+
+      try {
+        showToast(isEditMode ? '文档更新成功' : '文档创建成功');
+        setTimeout(() => {
+          window.location.href = 'documents.html';
+        }, 1000);
+      } catch (error) {
+        showToast('保存失败', 'error');
+      }
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      logout();
+      window.location.href = 'login.html';
+    });
+
+    loadDocument();
+  </script>
+</body>
+</html>

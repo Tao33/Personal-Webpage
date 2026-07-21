@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理仪表盘</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <nav>
+        <a href="dashboard.html" class="logo">管理后台</a>
+        <ul>
+          <li><a href="dashboard.html">仪表盘</a></li>
+          <li><a href="documents.html">文档管理</a></li>
+          <li><a href="projects.html">项目管理</a></li>
+          <li><a href="profile.html">个人资料</a></li>
+        </ul>
+        <div class="actions">
+          <button id="logout-btn" class="btn btn-secondary">退出登录</button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <h1>管理仪表盘</h1>
+    
+    <div class="dashboard-stats">
+      <div class="stat-card">
+        <div class="stat-number" id="doc-count">0</div>
+        <div class="stat-label">文档总数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="project-count">0</div>
+        <div class="stat-label">项目总数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="public-doc-count">0</div>
+        <div class="stat-label">公开文档</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="public-project-count">0</div>
+        <div class="stat-label">公开项目</div>
+      </div>
+    </div>
+
+    <h2>快捷操作</h2>
+    <div class="grid grid-2" style="margin-top: 1rem;">
+      <a href="document-edit.html" class="btn btn-primary" style="text-align: center; padding: 1.5rem;">
+        <i class="fas fa-file-plus" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
+        新建文档
+      </a>
+      <a href="project-edit.html" class="btn btn-primary" style="text-align: center; padding: 1.5rem;">
+        <i class="fas fa-folder-plus" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
+        新建项目
+      </a>
+      <a href="profile.html" class="btn btn-secondary" style="text-align: center; padding: 1.5rem;">
+        <i class="fas fa-user-edit" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
+        编辑个人资料
+      </a>
+      <a href="../docs.html" target="_blank" class="btn btn-secondary" style="text-align: center; padding: 1.5rem;">
+        <i class="fas fa-external-link-alt" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
+        预览网站
+      </a>
+    </div>
+
+    <h2>最近更新</h2>
+    <div class="grid grid-2" style="margin-top: 1rem;">
+      <div>
+        <h3>最近文档</h3>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>标题</th>
+              <th>状态</th>
+              <th>更新时间</th>
+            </tr>
+          </thead>
+          <tbody id="recent-docs"></tbody>
+        </table>
+      </div>
+      <div>
+        <h3>最近项目</h3>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>名称</th>
+              <th>状态</th>
+              <th>更新时间</th>
+            </tr>
+          </thead>
+          <tbody id="recent-projects"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { requireAuth, logout } from '../js/auth.js';
+    import { fetchData, formatDate } from '../js/utils.js';
+
+    if (!requireAuth()) return;
+
+    async function loadStats() {
+      const docs = await fetchData('../data/documents.json');
+      const projects = await fetchData('../data/projects.json');
+
+      if (docs) {
+        document.getElementById('doc-count').textContent = docs.length;
+        document.getElementById('public-doc-count').textContent = docs.filter(d => d.isPublic).length;
+
+        const recentDocs = docs.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 5);
+        const tbody = document.getElementById('recent-docs');
+        tbody.innerHTML = recentDocs.map(doc => `
+          <tr>
+            <td><a href="document-edit.html?id=${doc.id}">${doc.title}</a></td>
+            <td>${doc.isPublic ? '<span class="badge badge-public">公开</span>' : '<span class="badge badge-draft">草稿</span>'}</td>
+            <td>${formatDate(doc.updatedAt)}</td>
+          </tr>
+        `).join('');
+      }
+
+      if (projects) {
+        document.getElementById('project-count').textContent = projects.length;
+        document.getElementById('public-project-count').textContent = projects.filter(p => p.isPublic).length;
+
+        const recentProjects = projects.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 5);
+        const tbody = document.getElementById('recent-projects');
+        tbody.innerHTML = recentProjects.map(project => `
+          <tr>
+            <td><a href="project-edit.html?id=${project.id}">${project.name}</a></td>
+            <td>${project.isPublic ? '<span class="badge badge-public">公开</span>' : '<span class="badge badge-draft">草稿</span>'}</td>
+            <td>${formatDate(project.updatedAt)}</td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      logout();
+      window.location.href = 'login.html';
+    });
+
+    loadStats();
+  </script>
+</body>
+</html>

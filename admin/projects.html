@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>项目管理</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <nav>
+        <a href="dashboard.html" class="logo">管理后台</a>
+        <ul>
+          <li><a href="dashboard.html">仪表盘</a></li>
+          <li><a href="documents.html">文档管理</a></li>
+          <li><a href="projects.html">项目管理</a></li>
+          <li><a href="profile.html">个人资料</a></li>
+        </ul>
+        <div class="actions">
+          <button id="logout-btn" class="btn btn-secondary">退出登录</button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h1>项目管理</h1>
+      <a href="project-edit.html" class="btn btn-primary">新建项目</a>
+    </div>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>名称</th>
+          <th>技术栈</th>
+          <th>状态</th>
+          <th>创建时间</th>
+          <th>更新时间</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="projects-table"></tbody>
+    </table>
+  </main>
+
+  <script type="module">
+    import { requireAuth, logout } from '../js/auth.js';
+    import { fetchData, formatDate, showToast, confirmDialog } from '../js/utils.js';
+
+    if (!requireAuth()) return;
+
+    async function loadProjects() {
+      const projects = await fetchData('../data/projects.json');
+      if (!projects) return;
+
+      const tbody = document.getElementById('projects-table');
+      tbody.innerHTML = projects.map(project => `
+        <tr>
+          <td><a href="project-edit.html?id=${project.id}">${project.name}</a></td>
+          <td>${project.techStack.join(', ')}</td>
+          <td>${project.isPublic ? '<span class="badge badge-public">公开</span>' : '<span class="badge badge-draft">草稿</span>'}</td>
+          <td>${formatDate(project.createdAt)}</td>
+          <td>${formatDate(project.updatedAt)}</td>
+          <td>
+            <a href="project-edit.html?id=${project.id}" class="btn btn-sm btn-secondary"><i class="fas fa-edit"></i> 编辑</a>
+            <button onclick="deleteProject(${project.id})" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i> 删除</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    window.deleteProject = async function(id) {
+      const confirmed = await confirmDialog('确定要删除这个项目吗？');
+      if (!confirmed) return;
+
+      const projects = await fetchData('../data/projects.json');
+      if (!projects) return;
+
+      const filtered = projects.filter(p => p.id !== id);
+      
+      try {
+        showToast('删除成功');
+        loadProjects();
+      } catch (error) {
+        showToast('删除失败', 'error');
+      }
+    };
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      logout();
+      window.location.href = 'login.html';
+    });
+
+    loadProjects();
+  </script>
+</body>
+</html>

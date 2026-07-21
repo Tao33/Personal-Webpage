@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>项目作品 - 张三</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <nav>
+        <a href="index.html" class="logo">张三</a>
+        <ul>
+          <li><a href="index.html">首页</a></li>
+          <li><a href="projects.html">项目作品</a></li>
+          <li><a href="docs.html">文档中心</a></li>
+          <li><a href="contact.html">联系我</a></li>
+        </ul>
+        <div class="actions">
+          <div class="toggle-switch" id="theme-toggle"></div>
+          <a href="admin/login.html" class="btn btn-secondary">管理后台</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <h1>项目作品</h1>
+    <p class="text-secondary">展示我参与开发的一些项目作品</p>
+
+    <div class="search-bar">
+      <input type="text" id="search-input" placeholder="搜索项目...">
+    </div>
+
+    <div class="filters">
+      <div class="filter-group">
+        <label for="tech-filter">技术栈:</label>
+        <select id="tech-filter">
+          <option value="">全部</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="projects-grid" class="grid grid-3"></div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2024 张三. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script type="module">
+    import { fetchData, formatDate, applySavedTheme, toggleTheme, debounce } from './js/utils.js';
+
+    let projects = [];
+    let allTechStacks = [];
+
+    async function loadProjects() {
+      projects = await fetchData('data/projects.json');
+      if (!projects) return;
+
+      allTechStacks = [...new Set(projects.flatMap(p => p.techStack))];
+      populateTechFilter();
+      renderProjects(projects.filter(p => p.isPublic));
+    }
+
+    function populateTechFilter() {
+      const select = document.getElementById('tech-filter');
+      allTechStacks.forEach(tech => {
+        const option = document.createElement('option');
+        option.value = tech;
+        option.textContent = tech;
+        select.appendChild(option);
+      });
+    }
+
+    function renderProjects(filteredProjects) {
+      const grid = document.getElementById('projects-grid');
+      grid.innerHTML = '';
+
+      if (filteredProjects.length === 0) {
+        grid.innerHTML = '<p style="text-align: center; grid-column: 1/-1;">暂无项目</p>';
+        return;
+      }
+
+      filteredProjects.forEach(project => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <img src="${project.cover}" alt="${project.name}">
+          <div class="card-body">
+            <h3 class="card-title"><a href="project-detail.html?id=${project.id}">${project.name}</a></h3>
+            <p class="card-description">${project.description}</p>
+            <div class="card-tags">
+              ${project.techStack.map(tech => `<span class="tag">${tech}</span>`).join('')}
+            </div>
+            <div class="doc-meta">
+              <span>${formatDate(project.updatedAt)}</span>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function filterProjects() {
+      const searchQuery = document.getElementById('search-input').value.toLowerCase();
+      const techFilter = document.getElementById('tech-filter').value;
+
+      let filtered = projects.filter(p => p.isPublic);
+
+      if (searchQuery) {
+        filtered = filtered.filter(p => 
+          p.name.toLowerCase().includes(searchQuery) ||
+          p.description.toLowerCase().includes(searchQuery)
+        );
+      }
+
+      if (techFilter) {
+        filtered = filtered.filter(p => p.techStack.includes(techFilter));
+      }
+
+      renderProjects(filtered);
+    }
+
+    applySavedTheme();
+    loadProjects();
+
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    document.getElementById('search-input').addEventListener('input', debounce(filterProjects, 300));
+    document.getElementById('tech-filter').addEventListener('change', filterProjects);
+  </script>
+</body>
+</html>
