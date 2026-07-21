@@ -1,4 +1,4 @@
-const ADMIN_PASSWORD_HASH = 'your-sha256-hash-here';
+const ADMIN_PASSWORD_HASH = '482c811da5d5b4bc6d497ffa98491e384619d84e';
 const LOGIN_EXPIRY_DAYS = 7;
 
 export function isLoggedIn() {
