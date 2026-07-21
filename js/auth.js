@@ -11,8 +11,8 @@ export function isLoggedIn() {
   return now < parseInt(expiry);
 }
 
-export function login(password) {
-  const hash = sha256(password);
+export async function login(password) {
+  const hash = await sha256(password);
   if (hash === ADMIN_PASSWORD_HASH) {
     const expiry = Date.now() + LOGIN_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
     localStorage.setItem('adminToken', hash);

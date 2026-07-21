@@ -81,7 +81,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.2/marked.min.js"></script>
   <script type="module">
     import { requireAuth, logout } from '../js/auth.js';
-    import { fetchData, showToast, generateSlug } from '../js/utils.js';
+    import { fetchData, saveData, showToast, generateSlug } from '../js/utils.js';
 
     if (!requireAuth()) return;
 
@@ -148,12 +148,23 @@
       };
 
       try {
+        const docs = await fetchData('../data/documents.json') || [];
+        if (isEditMode) {
+          const index = docs.findIndex(d => d.id === documentData.id);
+          if (index !== -1) {
+            docs[index] = documentData;
+          }
+        } else {
+          docs.push(documentData);
+        }
+        saveData('data/documents.json', docs);
         showToast(isEditMode ? '文档更新成功' : '文档创建成功');
         setTimeout(() => {
           window.location.href = 'documents.html';
         }, 1000);
       } catch (error) {
         showToast('保存失败', 'error');
+        console.error(error);
       }
     });
 

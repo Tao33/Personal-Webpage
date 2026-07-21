@@ -5,6 +5,13 @@ export const BRANCH = 'main';
 
 export async function fetchData(path) {
   try {
+    const localStorageKey = path.replace(/\//g, '_');
+    const localStorageData = localStorage.getItem(localStorageKey);
+    
+    if (localStorageData) {
+      return JSON.parse(localStorageData);
+    }
+    
     const response = await fetch(path);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -14,6 +21,12 @@ export async function fetchData(path) {
     console.error('Error fetching data:', error);
     return null;
   }
+}
+
+export function saveData(path, data) {
+  const localStorageKey = path.replace(/\//g, '_');
+  localStorage.setItem(localStorageKey, JSON.stringify(data));
+  return true;
 }
 
 export async function fetchGitHubFile(filePath) {

@@ -32,7 +32,7 @@
         const isValid = await verifyPassword(password);
         
         if (isValid) {
-          login(password);
+          await login(password);
           window.location.href = 'dashboard.html';
         } else {
           errorDiv.textContent = '密码错误，请重试';

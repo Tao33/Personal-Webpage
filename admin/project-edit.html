@@ -76,7 +76,7 @@
 
   <script type="module">
     import { requireAuth, logout } from '../js/auth.js';
-    import { fetchData, showToast } from '../js/utils.js';
+    import { fetchData, saveData, showToast } from '../js/utils.js';
 
     if (!requireAuth()) return;
 
@@ -135,12 +135,23 @@
       };
 
       try {
+        const projects = await fetchData('../data/projects.json') || [];
+        if (isEditMode) {
+          const index = projects.findIndex(p => p.id === projectData.id);
+          if (index !== -1) {
+            projects[index] = projectData;
+          }
+        } else {
+          projects.push(projectData);
+        }
+        saveData('data/projects.json', projects);
         showToast(isEditMode ? '项目更新成功' : '项目创建成功');
         setTimeout(() => {
           window.location.href = 'projects.html';
         }, 1000);
       } catch (error) {
         showToast('保存失败', 'error');
+        console.error(error);
       }
     });
 
